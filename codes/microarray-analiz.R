@@ -1,12 +1,27 @@
 library(GEOquery)
 
-txdata<-getGEO("GSE12345")
+txdata<-getGEO("GSE48350")
 
 
-exprs_data <- exprs(txdata)
- # Ekspresyon matrisi
-pdata <- pData(txdata) 
- # Fenotipik bilgiler (örneğin grup, hastalık durumu)
-head(txdata[,1:5])
-# İlk 5 örneğin ilk genleri
-head(pdata)
+txdata<-txdata[[1]]
+
+assaytx<-txdata@assayData$exprs
+
+phenotx<-txdata@phenoData@data
+
+metatx<-txdata@featureData@data
+
+hippocampus_rows<-phenotx[grep("hippocampus",phenotx$characteristics_ch1.1),]
+
+hippocampus_rows_AD<-phenotx[grep("hippocampus",phenotx$characteristics_ch1.2),]
+
+postcentral_gyrus_rows<-phenotx[grep("postcentral gyrus",phenotx$characteristics_ch1.1),]
+
+superior_frontal_gyrus_rows<-phenotx[grep("superior frontal gyrus",phenotx$characteristics_ch1.1),]
+
+entorhinal_cortex_rows<-phenotx[grep("entorhinal cortex",phenotx$characteristics_ch1.1),]
+
+
+united_hippocampus<-rbind(hippocampus_rows,hippocampus_rows_AD)
+
+hippocampus_data <- assaytx[, colnames(assaytx) %in% united_hippocampus$geo_accession]
