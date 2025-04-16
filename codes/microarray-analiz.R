@@ -25,3 +25,10 @@ entorhinal_cortex_rows<-phenotx[grep("entorhinal cortex",phenotx$characteristics
 united_hippocampus<-rbind(hippocampus_rows,hippocampus_rows_AD)
 
 hippocampus_data <- assaytx[, colnames(assaytx) %in% united_hippocampus$geo_accession]
+
+
+hist(hippocampus_data)
+
+hippocampus_data_N<-log2(hippocampus_data)
+
+hist(hippocampus_data_N)
