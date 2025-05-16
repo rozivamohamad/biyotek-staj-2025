@@ -1,5 +1,6 @@
 # veri okumak için paket yukleyelim 
 library(GEOquery)
+library(ggplot2)
 
 # verileri yukleyelim 
 txdata<-getGEO("GSE50161")
@@ -26,18 +27,36 @@ transposed_data<-t(organisassay)
 dataPCA<-prcomp(transposed_data)
 PC1<-dataPCA$x[,1]
 PC2<-dataPCA$x[ ,2]
-
-plot(dataPCA$x)
-
-
-# ggplot(data=dataPCA$x, aes(x=PC1, y=PC2)) + geom_point()
+labels<-row.names(transposed_data)
+ggplot(data=dataPCA$x, aes(x=PC1, y=PC2)) + geom_point() + geom_text(label=labels, check_overlap = T)
 # t test yapalım 
 # once p degerlerini toplayacagimiz bir boş vektor oluşturalim
 
 p_val=NULL
 
-
 for (i in 1:nrow(organisassay_N)) { 
   p_val[i] = t.test(organisassay_N[i,1:46], organisassay_N[i,47:59])$p.value #Since t.test function gives more numbers then just the p.value, we should take the p-value by $p.value
 } #Constructed a for loop for every row of the assay data. 
 
+BF_p_val<- p.adjust(p_val, method = "bonferroni")
+BF_sign_genes = which(BF_p_val < 0.01)
+
+Sign_Gene_Names = metatx$`Gene Symbol`[BF_sign_genes]
+Unique_Gene_Names = unique(Sign_Gene_Names)
+write.table(Unique_Gene_Names, file = "Unique Gene Names.txt", sep = "\t", quote = F, row.names = F)
+
+# Sample Clustering
+
+Clust_Samples = organisassay_N[BF_sign_genes,]
+dist_samples = as.dist(1-cor(Clust_Samples, method = "spearman")) #Calculating the distance between samples using pearson method
+hSamples = hclust(dist_samples, method = "complete") #Hierarchically clustering the genes using complete linkage method.
+plot(as.dendrogram(hSamples)) #plotting the dendrogram"
+
+#Gene Clustering
+
+Clust_Genes = t(organisassay_N[BF_sign_genes,]) #Taking the transpose of the data, since gene clustering is required.
+dist_genes = as.dist(1-cor(Clust_Genes, method = "spearman")) #Finding the inter cluster distance between genes.
+hGenes = hclust(dist_genes, method = "complete") #Clustering the samples using above distance and complete linkage method.
+plot(as.dendrogram(hGenes)) #Plotting the clustered genes as dendrogram.
+
+heatmap(Clust_Samples, Rowv = as.dendrogram(hGenes), Colv = as.dendrogram(hSamples), scale = "row",) #Creating a heatmap
