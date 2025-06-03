@@ -10,13 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
- mikro dizinin verisi okumak icin" GEOquery " paketi yuklilelim
+  veri okumak icin  paketi yuklilelim
 ```{r}
 library(GEOquery)
-
+library(ggplot2)
 ```
 
-veri dosyasi okutmak icin GSE50161
+veri dosyasi okuyalim 
 ```{r}
 
 txdata<-getGEO("GSE50161")
@@ -98,7 +98,7 @@ ggplot(data = dataPCA$x, aes(x= PC1, y= PC2)) + geom_point() + geom_text(label=l
 ```
 
 
-# once p degerlerini toplayacagimiz bir vektor olusturalim
+once p degerlerini toplayacagimiz bir vektor olusturalim
 
 ```{r}
 p_value <- NULL
@@ -106,19 +106,21 @@ p_value <- NULL
 for (i in 1:nrow(organisassay_N)){
   
   
-  p_value[i]<-t.test(organisassay_N [i,1:46], organisassay_N [i,47:59])$p.value
+  p_value[i]<-t.test(organisassay_N [i,1:46], organisassay_N [i,47:59])$p.value# t.test fonksiyonu sadece p-degerinden fazlasini verdigi icin, p-degerini $p.value ile almaliyiz
+
   
   
-}
+} # Assay verisinin her bir satiri icin bir for dongusu  olusturalim.
+
 ```
-#p değeri bonferroni yaparak correction yapalım 
+p degeri bonferroni yaparak correction yapalim 
 
 ```{r}
 BF_p_value<-p.adjust(p_value,method = "bonferroni")
 
 BF_sign_genes=which(BF_p_value<0.01)
 ```
-#gen isimleri geri dondurelim. 
+gen isimleri geri dondurelim. 
 
 ```{r}
 genes_names<-metatx$`Gene Symbol`[BF_sign_genes]
@@ -126,7 +128,7 @@ genes_names<-metatx$`Gene Symbol`[BF_sign_genes]
 unique_genisimler<-unique(genes_names)
 
 ```
-#dondurdumuz gen isinleri bir txt yapalım.
+dondurdumuz gen isinleri bir txt yapalim.
 
 
 ```{r}
@@ -134,4 +136,37 @@ unique_genisimler<-unique(genes_names)
 write.table(unique_genisimler,file = "unique gen isimleri.txt",sep="\t",quote = F,row.names = F)
 
 ```
+
+
+ornek Komeleme
+
+
+```{r}
+Clust_Samples = organisassay_N[BF_sign_genes,]  
+dist_samples = as.dist(1-cor(Clust_Samples, method = "spearman"))  # ornekler arasindaki mesafeyi spearman korelasyonuna gore hesaplama
+hSamples = hclust(dist_samples, method = "complete")  # ornekleri complete balaganti yontemi ile hiyerarsik olarak komeleme
+plot(as.dendrogram(hSamples))  # Dendrogram grafigi cizme
+```
+
+Gen Komeleme
+
+```{r}
+
+Clust_Genes = t(organisassay_N[BF_sign_genes,])  # Gen komeleme icin verinin transpozu aliniyor
+dist_genes = as.dist(1-cor(Clust_Genes, method = "spearman"))  # Genler arasindaki mesafeyi bulma
+hGenes = hclust(dist_genes, method = "complete")  # Yukaridaki mesafeye gore genleri complete baglanti yontemi ile komeleme
+plot(as.dendrogram(hGenes))  # Gen komeleme dendrogrami ??izme
+```
+
+IsD1 HaritasD1 Olusturma
+
+```{r}
+
+heatmap(Clust_Samples, Rowv = as.dendrogram(hGenes), Colv = as.dendrogram(hSamples), scale = "row")  # Isi haritasi olusturma
+
+```
+
+
+
+
 
